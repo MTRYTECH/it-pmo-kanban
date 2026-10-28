@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check index.html exists
+        run: test -f index.html
+      - name: Enforce project constraints
+        run: |
+          fail=0
+          check() {
+            if grep -nE "$2" index.html; then echo "::error::$1"; fail=1; fi
+          }
+          check "Browser storage is not allowed" 'localStorage|sessionStorage|indexedDB|document\.cookie'
+          check "!important is not allowed" '!important'
+          check "alert()/confirm() are not allowed" '(^|[^A-Za-z.])(alert|confirm)\('
+          check "External scripts/styles are not allowed" '(src|href)="https?:'
+          exit $fail
+
+  deploy:
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    needs: validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/configure-pages@v5
+      - name: Collect site files
+        run: |
+          mkdir _site
+          cp index.html _site/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4

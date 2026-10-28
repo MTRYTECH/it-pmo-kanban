@@ -1,0 +1,23 @@
+# secrets / local config
+.env
+.env.*
+*.pem
+*.key
+credentials*
+id_rsa*
+
+# local tooling and scratch
+.claude/settings.local.json
+node_modules/
+*.log
+_site/
+
+# unrelated local files and nested projects
+software-dev-site/
+*.docx
+
+# OS / IDE
+Thumbs.db
+.DS_Store
+.vscode/
+.idea/
